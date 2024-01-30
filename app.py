@@ -46,14 +46,17 @@ class PalBox():
                     self.my_box[self.level].append(breed_dict[p, q])
             self.my_box[self.level].sort(key=id2i)
     
-    def get_bread_list(self, pal_id: str):
+    def get_bread_list(self, pal_id: str, is_included_self_lv = False):
         lv = self.level
         for i, b in enumerate(self.my_box):
             if pal_id in b:
                 lv = i
-        if lv == 0:
-            return []
-        s = {tuple(sorted((p, q), key=id2i)) for p, q in breed_rev_dict[pal_id] if p in self.total_box[lv - 1] and q in self.total_box[lv - 1]}
+        if not is_included_self_lv:
+            if lv == 0:
+                return []
+            s = {tuple(sorted((p, q), key=id2i)) for p, q in breed_rev_dict[pal_id] if p in self.total_box[lv - 1] and q in self.total_box[lv - 1]}
+        else:
+            s = {tuple(sorted((p, q), key=id2i)) for p, q in breed_rev_dict[pal_id] if p in self.total_box[lv] and q in self.total_box[lv]}
         return sorted(list(s), key=lambda x: id2i(x[0]) * 10000 + id2i(x[1]))
 
 class PalSprite():
@@ -276,6 +279,7 @@ class PalTabel(SubWindow):
 
 class BoxTable(SubWindow):
     table = None
+    is_included_self_lv = False
     xx, yy, ww, hh = border_x, border_y, window_x-breed_col_w, window_y-border_y*2
     def __init__(self, box: PalBox, frame = True, color = (255, 255, 255, 255)):
         super().__init__(BoxTable.xx, BoxTable.yy, BoxTable.ww, BoxTable.hh, frame, color)
@@ -297,7 +301,7 @@ class BoxTable(SubWindow):
                 if isClicked:
                     obj.isChosen = not obj.isChosen
                     if obj.isChosen:
-                        BreedTable(obj.pal_id)
+                        BreedTable(obj.pal_id, BoxTable.is_included_self_lv)
                     else:
                         BreedTable('')
             else:
@@ -310,6 +314,7 @@ class BoxTable(SubWindow):
             if type(obj) == LabelObj: continue
             if obj.pal_id == id:
                 return obj
+        return None
     
     def clear_frame(self):
         for obj in self.objlist:
@@ -319,10 +324,11 @@ class BoxTable(SubWindow):
 class BreedTable(SubWindow):
     table = None
     xx, yy, ww, hh = window_x-breed_col_w, border_y, breed_col_w-border_x, window_y-border_y*2
-    def __init__(self, pal_id, frame = True, color = (255, 255, 255, 255)):
+    def __init__(self, pal_id, is_included_self_lv = False, frame = True, color = (255, 255, 255, 255)):
         super().__init__(BreedTable.xx, BreedTable.yy, BreedTable.ww, BreedTable.hh, frame, color)
+        self.pal_id = pal_id
         if pal_id in id_list:
-            self.bread_list = BoxTable.table.box.get_bread_list(pal_id)
+            self.bread_list = BoxTable.table.box.get_bread_list(pal_id, is_included_self_lv)
             if self.bread_list == []: self.add_obj(LabelObj('   你已經有了', 20))
             for bread in self.bread_list:
                 self.add_obj(PalBreedObj(*bread))
@@ -335,6 +341,8 @@ class BreedTable(SubWindow):
         x -= self.x - self.scroll_x
         y -= self.y - self.scroll_y
         if isClicked: BoxTable.table.clear_frame()
+        oo = BoxTable.table.get_obj(self.pal_id)
+        if oo is not None: oo.isChosen = True
         for obj in self.objlist:
             if obj.x <= x <= obj.x + obj.w and obj.y <= y <= obj.y + obj.h:
                 obj.isTouched = True
@@ -368,6 +376,11 @@ def return_btn_click():
     global game_mode
     game_mode = 'choosing'
 
+def included_lv_btn_click():
+    BoxTable.table.clear_frame()
+    BoxTable.is_included_self_lv = not BoxTable.is_included_self_lv
+    BreedTable(BreedTable.table.pal_id, BoxTable.is_included_self_lv)
+
 paltb_label = LabelObj('選擇你持有的帕魯', 20, 10, 10)
 paltb = PalTabel(border_x, border_y, window_x-border_x*2, window_y-border_y*2, True)
 paltb_btn = BtnObj('選擇完畢', 20, paltb_btn_click, window_x-100, window_y-45)
@@ -375,6 +388,8 @@ boxtb_label = LabelObj('你可以繁殖出的帕魯 (不考慮雌雄的話啦XD)
 breedtb = None
 boxtb = None
 return_btn = BtnObj('返回', 20, return_btn_click, 10, window_y-45)
+included_lv_btn = BtnObj('  含同代  ', 20, included_lv_btn_click, window_x-100, 10)
+not_included_lv_btn = BtnObj('不含同代', 20, included_lv_btn_click, window_x-100, 10)
 
 pygame.display.update()
 
@@ -391,19 +406,23 @@ while True:
                        event.y if event.type == MOUSEWHEEL else 0]
         window_surface.fill((255, 255, 255))
         if game_mode == 'choosing':
+            paltb.running(*mouse_event)
+            paltb_btn.running(*mouse_event)
             paltb_label.blitme(window_surface)
             paltb.blitme(window_surface)
             paltb_btn.blitme(window_surface)
-            paltb.running(*mouse_event)
-            paltb_btn.running(*mouse_event)
         elif game_mode == 'gaming':
-            boxtb_label.blitme(window_surface)
-            BoxTable.table.blitme(window_surface)
-            BreedTable.table.blitme(window_surface)
-            return_btn.blitme(window_surface)
+            lv_btn = not_included_lv_btn if BoxTable.is_included_self_lv else included_lv_btn
             BoxTable.table.running(*mouse_event)
             BreedTable.table.running(*mouse_event)
             return_btn.running(*mouse_event)
+            lv_btn.running(*mouse_event)
+            lv_btn = not_included_lv_btn if BoxTable.is_included_self_lv else included_lv_btn
+            return_btn.blitme(window_surface)
+            boxtb_label.blitme(window_surface)
+            BoxTable.table.blitme(window_surface)
+            BreedTable.table.blitme(window_surface)
+            lv_btn.blitme(window_surface)
             
     pygame.display.update()
     clock.tick(60)
