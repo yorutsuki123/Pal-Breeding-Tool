@@ -175,7 +175,6 @@ class PalObj(TouchableObj):
 
 class PalBreedObj(TouchableObj):
     def __init__(self, pal1, pal2, x=0, y=0):
-        print(pal1, pal2)
         pal_id1, pal_sex1 = pal1
         pal_id2, pal_sex2 = pal2
         self.pal_id1 = pal_id1
@@ -307,7 +306,7 @@ class SubWindow():
 
 class PalTable(SubWindow):
     save = []
-    sex_mode = False
+    sex_mode = True
     table = None
     def __init__(self, x, y, w, h, frame = False, color = (255, 255, 255, 255)):
         super().__init__(x, y, w, h, frame, color)
@@ -364,7 +363,6 @@ class PalTable(SubWindow):
         with open('save.txt', 'r') as f:
             PalTable.save = [x.strip().split(':') for x in f.readlines()]
             PalTable.save = [[x[0], int(x[1])] if len(x) > 1 else [x[0], 0] for x in PalTable.save if x[0] in id_list]
-            print(PalTable.save)
     
     def write_save(self):
         with open('save.txt', 'w') as f:
@@ -484,7 +482,7 @@ sex_btn = BtnObj('切換模式', 20, sex_btn_click, window_x-100, 10)
 sex_labels = {True: LabelObj('模式：考慮性別', 20, window_x-250, 15), False:LabelObj('模式：不論性別', 20, window_x-250, 15)}
 
 
-boxtb_label = LabelObj('你可以繁殖出的帕魯 (不考慮雌雄的話啦XD)', 20, 10, 15)
+boxtb_label = LabelObj('你可以繁殖出的帕魯', 20, 10, 15)
 return_btn = BtnObj('返回', 20, return_btn_click, 10, window_y-45)
 lv_btn = BtnObj('切換模式', 20, included_lv_btn_click, window_x-100, 10)
 lv_labels = {True: LabelObj('模式：包含同代', 20, window_x-250, 15), False:LabelObj('模式：不含同代', 20, window_x-250, 15)}
