@@ -436,6 +436,7 @@ class BreedTable(SubWindow):
         oo = BoxTable.table.get_obj(self.pal_id, self.pal_sex)
         if oo is not None: oo.isChosen = True
         for obj in self.objlist:
+            if type(obj) == LabelObj: continue
             if obj.x <= x <= obj.x + obj.w and obj.y <= y <= obj.y + obj.h:
                 obj.isTouched = True
                 if isClicked:
